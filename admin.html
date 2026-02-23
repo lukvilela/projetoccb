@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Painel Administrativo</title>
+    <link rel="stylesheet" href="style2.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+
+<h1>Painel Administrativo</h1>
+
+<div class="container">
+    <a href="registro.html" class="btn">Novo Registro</a>
+    <a href="historico.html" class="btn">Ver Histórico</a>
+    <button onclick="sair()" class="btn-danger">Sair</button>
+</div>
+
+<script>
+if (localStorage.getItem("logado") !== "true") {
+    window.location.href = "login.html";
+}
+
+function sair() {
+    localStorage.removeItem("logado");
+    window.location.href = "index.html";
+}const darkBtn = document.getElementById("darkBtn");
+
+function aplicarTema() {
+    if (localStorage.getItem("darkMode") === "true") {
+        document.body.classList.add("dark");
+        if (darkBtn) darkBtn.innerText = "☀️";
+    } else {
+        document.body.classList.remove("dark");
+        if (darkBtn) darkBtn.innerText = "🌙";
+    }
+}
+
+if (darkBtn) {
+    darkBtn.addEventListener("click", () => {
+        const ativo = document.body.classList.contains("dark");
+        localStorage.setItem("darkMode", !ativo);
+        aplicarTema();
+    });
+}
+
+aplicarTema();
+</script>
+
+</body>
+</html>

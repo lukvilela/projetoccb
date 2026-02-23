@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Login</title>
+    <link rel="stylesheet" href="style2.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+
+<div class="container" style="max-width:400px; margin:120px auto; text-align:center;">
+    <h2>Acesso ao Sistema</h2>
+
+    <input 
+        type="password" 
+        id="senha" 
+        placeholder="Digite a senha"
+        style="width:100%; padding:10px;"
+    >
+
+    <br><br>
+
+    <button onclick="entrar()" style="width:100%;">
+        Entrar
+    </button>
+
+    <p id="erro" style="color:red; margin-top:10px;"></p>
+</div>
+
+<script>
+
+/* =========================
+   CONFIGURAÇÃO
+========================= */
+
+const SENHA_CORRETA = "ccb123";
+
+/* =========================
+   SE JÁ ESTIVER LOGADO
+========================= */
+
+if (localStorage.getItem("logado") === "true") {
+window.location.href = "index.html";}
+
+/* =========================
+   FUNÇÃO DE LOGIN
+========================= */
+
+function entrar() {
+
+    const senhaInput = document.getElementById("senha");
+    const erro = document.getElementById("erro");
+    const senha = senhaInput.value.trim();
+
+    erro.innerText = "";
+
+    if (!senha) {
+        erro.innerText = "Digite a senha.";
+        return;
+    }
+
+    if (senha === SENHA_CORRETA) {
+        localStorage.setItem("logado", "true");
+        window.location.href = "index.html";
+    } else {
+        erro.innerText = "Senha incorreta!";
+        senhaInput.value = "";
+        senhaInput.focus();
+    }
+}
+
+/* =========================
+   ENTER PARA LOGAR
+========================= */
+
+document.getElementById("senha").addEventListener("keypress", function(e) {
+    if (e.key === "Enter") {
+        entrar();
+    }
+});
+function toggleDark() {
+    document.body.classList.toggle("dark");
+    localStorage.setItem("darkMode", document.body.classList.contains("dark"));
+}
+
+if (localStorage.getItem("darkMode") === "true") {
+    document.body.classList.add("dark");
+}
+const darkBtn = document.getElementById("darkBtn");
+
+function aplicarTema() {
+    if (localStorage.getItem("darkMode") === "true") {
+        document.body.classList.add("dark");
+        if (darkBtn) darkBtn.innerText = "☀️";
+    } else {
+        document.body.classList.remove("dark");
+        if (darkBtn) darkBtn.innerText = "🌙";
+    }
+}
+
+if (darkBtn) {
+    darkBtn.addEventListener("click", () => {
+        const ativo = document.body.classList.contains("dark");
+        localStorage.setItem("darkMode", !ativo);
+        aplicarTema();
+    });
+}
+
+aplicarTema();
+</script>
+
+</body>
+</html>

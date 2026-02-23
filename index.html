@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="pt-br" class="">
+<head>
+    <meta charset="UTF-8">
+    <title>CCB Itaquiti</title>
+
+    <!-- APLICA TEMA ANTES DE RENDERIZAR -->
+    <script>
+        if (localStorage.getItem("darkMode") === "true") {
+            document.documentElement.classList.add("dark");
+        }
+    </script>
+
+    <link rel="stylesheet" href="style2.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+</head>
+
+<body>
+
+<header class="topo">
+    <div class="topo-container">
+
+        <div class="logo-area" onclick="window.location.href='index.html'" style="cursor:pointer;">
+    <img src="Logo_oficial_CCB.png" alt="Logo CCB">
+    <span>CCB Itaquiti</span>
+</div>
+
+        <h1>Controle de Presença da RDJ</h1>
+
+     <nav class="menu">
+<button id="darkBtn" onclick="toggleDark()" style="margin-left:15px;">🌙</button>    <a href="index.html">Home</a>
+    <span id="menuRegistro"></span>
+    <a href="historico.html">Histórico</a>
+    <a href="dashboard.html">Dashboard</a>
+    <span id="menuLogin"></span>
+</nav>
+    </div>
+</header>
+
+<div class="hero">
+    <h1>Reunião de Jovens</h1>
+    <p>Congregação Cristã no Brasil</p>
+
+    <p class="endereco">
+        Rua Presidente Nilo Peçanha, 109<br>
+        Jardim Itaquiti - Barueri - SP
+    </p>
+
+    <a href="historico.html" class="btn-principal">
+        Ver Histórico de Registros
+    </a>
+</div>
+
+<script>
+
+
+</script>
+<script src="js/global.js"></script>
+</body>
+</html>

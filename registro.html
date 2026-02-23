@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Registro</title>
+    <script>
+if (localStorage.getItem("darkMode") === "true") {
+    document.documentElement.classList.add("dark");
+}
+</script>
+    <link rel="stylesheet" href="style2.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+
+<header class="topo">
+    <div class="topo-container">
+        
+       <div class="logo-area" onclick="window.location.href='index.html'" style="cursor:pointer;">
+    <img src="Logo_oficial_CCB.png" alt="Logo CCB">
+    <span>CCB Itaquiti</span>
+</div>
+        <h1>Controle de Presença da RDJ</h1>
+     <nav class="menu">
+    <button id="darkBtn" onclick="toggleDark()">🌙</button>
+    <a href="index.html">Home</a>
+
+    <span id="menuRegistro"></span>
+
+    <a href="historico.html">Histórico</a>
+    <a href="dashboard.html">Dashboard</a>
+
+    <span id="menuLogin"></span>
+</nav>
+    </div>
+</header>
+
+<div class="container">
+
+<h2>Registro da Reunião</h2>
+
+<label>Data</label>
+<input type="date" id="data">
+
+<label>Quem atendeu</label>
+<input type="text" id="atendeu">
+
+<label>Palavra</label>
+<input type="text" id="palavra">
+
+<h3>Presentes</h3>
+<div class="totais-box">
+    <div class="total-item">
+        <span>Total de Irmãos</span>
+        <strong id="totalIrmaos">0</strong>
+    </div>
+    <div class="total-item">
+        <span>Total de Músicos</span>
+        <strong id="totalMusicos">0</strong>
+    </div>
+    <div class="total-item destaque">
+        <span>Total Geral (inclui visitas)</span>
+        <strong id="totalGeral">0</strong>
+    </div>
+</div>
+
+<div class="row">
+    <div><label>Moços</label><input type="number" id="mocos" min="0"></div>
+    <div><label>Moças</label><input type="number" id="mocas" min="0"></div>
+</div>
+
+<div class="row">
+    <div><label>Casados</label><input type="number" id="casados" min="0"></div>
+    <div><label>Músicos</label><input type="number" id="musicos" min="0"></div>
+</div>
+
+<div class="row">
+    <div><label>Organistas</label><input type="number" id="organistas" min="0"></div>
+    <div><label>Visitas</label><input type="number" id="visitas" min="0"></div>
+</div>
+
+<div class="row">
+    <div><label>Bíblias</label><input type="number" id="biblias" min="0"></div>
+    <div><label>Recitativos</label><input type="number" id="recitativos" min="0"></div>
+</div>
+
+<div class="section-title">Continuações - Irmãos</div>
+<label>Continuação 1</label><input type="text" id="irmaos1">
+<label>Continuação 2</label><input type="text" id="irmaos2">
+<label>Continuação 3</label><input type="text" id="irmaos3">
+
+<div class="section-title">Continuações - Irmãs</div>
+<label>Continuação 1</label><input type="text" id="irmas1">
+<label>Continuação 2</label><input type="text" id="irmas2">
+<label>Continuação 3</label><input type="text" id="irmas3">
+
+<button type="button" onclick="salvarRegistro()" class="btn-salvar">Salvar Registro</button>
+
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+
+<script>
+const firebaseConfig = {
+    apiKey: "AIzaSyD_QowpgX19PlVE1Cz0D0cpIJh7K0nUq0o",
+    authDomain: "ccb-registro.firebaseapp.com",
+    projectId: "ccb-registro",
+    storageBucket: "ccb-registro.firebasestorage.app",
+    messagingSenderId: "634223347098",
+    appId: "1:634223347098:web:c5124dd418b601baa22623",
+    measurementId: "G-5F7P9SDRBB"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+/* =========================
+   LOGIN
+========================= */
+const estaLogado = localStorage.getItem("logado") === "true";
+const menuLogin = document.getElementById("menuLogin");
+const menuRegistro = document.getElementById("menuRegistro");
+
+if (estaLogado) {
+    menuLogin.innerHTML = '<button onclick="sair()">Sair</button>';
+    menuRegistro.innerHTML = '<a href="registro.html">Registrar</a>';
+} else {
+    menuLogin.innerHTML = '<a href="login.html">Login</a>';
+    alert("Acesso restrito.");
+    window.location.href = "index.html";
+}
+
+function sair() {
+    localStorage.removeItem("logado");
+    window.location.href = "login.html";
+}
+
+/* =========================
+   INPUTS
+========================= */
+const inputsNum = ["mocos","mocas","casados","musicos","organistas","visitas","biblias","recitativos"];
+const dataInput = document.getElementById("data");
+const atendeuInput = document.getElementById("atendeu");
+const palavraInput = document.getElementById("palavra");
+
+/* =========================
+   TOTAIS
+========================= */
+function calcularTotais() {
+    let totalIrmaos = 0;
+    let totalMusicos = 0;
+    let totalGeral = 0;
+
+    const mocos = parseInt(document.getElementById("mocos").value) || 0;
+    const mocas = parseInt(document.getElementById("mocas").value) || 0;
+    const casados = parseInt(document.getElementById("casados").value) || 0;
+    const musicos = parseInt(document.getElementById("musicos").value) || 0;
+    const organistas = parseInt(document.getElementById("organistas").value) || 0;
+    const visitas = parseInt(document.getElementById("visitas").value) || 0;
+
+    totalIrmaos = mocos + mocas + casados;
+    totalMusicos = musicos + organistas;
+    totalGeral = totalIrmaos + visitas;
+
+    document.getElementById("totalIrmaos").textContent = totalIrmaos;
+    document.getElementById("totalMusicos").textContent = totalMusicos;
+    document.getElementById("totalGeral").textContent = totalGeral;
+}
+
+inputsNum.forEach(id => {
+    document.getElementById(id).addEventListener("input", () => {
+        const val = document.getElementById(id).value;
+        if (val.startsWith("0") && val.length > 1) document.getElementById(id).value = val.replace(/^0+/, "");
+        calcularTotais();
+    });
+});
+
+/* =========================
+   CARREGAR EDIÇÃO
+========================= */
+let editandoId = localStorage.getItem("editandoId");
+
+if (editandoId) {
+    db.collection("registros").doc(editandoId).get()
+    .then(doc => {
+        if (doc.exists) {
+            const r = doc.data();
+            dataInput.value = r.data || "";
+            atendeuInput.value = r.atendeu || "";
+            palavraInput.value = r.palavra || "";
+            inputsNum.forEach(id => {
+                document.getElementById(id).value = r[id] || "";
+            });
+            ["irmaos1","irmaos2","irmaos3","irmas1","irmas2","irmas3"].forEach(id => {
+                document.getElementById(id).value = r[id] || "";
+            });
+            calcularTotais();
+        }
+    });
+}
+
+/* =========================
+   SALVAR REGISTRO
+========================= */
+function salvarRegistro() {
+
+    // Função que valida números inteiros positivos ou vazio
+    function validarNumero(valor) {
+        valor = valor.trim();
+        if (valor === "") return "";
+        if (!/^\d+$/.test(valor)) return null;
+        if (Number(valor) < 0) return null;
+        return Number(valor);
+    }
+
+    // Validar campos numéricos
+    let numeros = {};
+    for (let id of inputsNum) {
+        const val = validarNumero(document.getElementById(id).value);
+        if (val === null) {
+            alert(`O campo '${id}' deve conter apenas números inteiros positivos!`);
+            document.getElementById(id).focus();
+            return;
+        }
+        numeros[id] = val;
+    }
+
+    // Campos de texto obrigatórios
+    const dataVal = dataInput.value.trim();
+    const atendeuVal = atendeuInput.value.trim();
+    const palavraVal = palavraInput.value.trim();
+    if (!dataVal || !atendeuVal || !palavraVal) {
+        alert("Todos os campos de texto devem ser preenchidos!");
+        return;
+    }
+
+    // Continuações: obrigatórios, letras + números
+    const continuacoes = ["irmaos1","irmaos2","irmaos3","irmas1","irmas2","irmas3"];
+    for (let id of continuacoes) {
+        const val = document.getElementById(id).value.trim();
+        if (!val) {
+            alert(`O campo '${id}' deve ser preenchido!`);
+            document.getElementById(id).focus();
+            return;
+        }
+        if (!(/[A-Za-z]/.test(val) && /[0-9]/.test(val))) {
+            alert(`O campo '${id}' deve conter letras e números!`);
+            document.getElementById(id).focus();
+            return;
+        }
+    }
+
+    // Montar objeto registro
+    const registro = {
+        data: dataVal,
+        atendeu: atendeuVal,
+        palavra: palavraVal,
+        ...numeros
+    };
+
+    // Adicionar continuações
+    continuacoes.forEach(id => registro[id] = document.getElementById(id).value.trim());
+    registro.timestamp = firebase.firestore.FieldValue.serverTimestamp();
+
+    // Salvar ou atualizar
+    if (editandoId) {
+        db.collection("registros").doc(editandoId).set(registro)
+        .then(() => {
+            alert("Registro atualizado com sucesso!");
+            localStorage.removeItem("editandoId");
+            window.location.href = "historico.html";
+        })
+        .catch(error => {
+            console.error(error);
+            alert("Erro ao atualizar registro!");
+        });
+    } else {
+        db.collection("registros").add(registro)
+        .then(() => {
+            alert("Registro salvo com sucesso!");
+            window.location.href = "historico.html";
+        })
+        .catch(error => {
+            console.error(error);
+            alert("Erro ao salvar registro!");
+        });
+    }
+
+    calcularTotais();
+}
+
+</script>
+
+<script src="js/global.js"></script>
+
+
+</body>
+</html>
