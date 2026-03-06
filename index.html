@@ -1,9 +1,13 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-br" class="">
 <head>
     <meta charset="UTF-8">
     <title>CCB Itaquiti</title>
 
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
     <!-- APLICA TEMA ANTES DE RENDERIZAR -->
     <script>
         if (localStorage.getItem("darkMode") === "true") {
@@ -19,17 +23,20 @@
 <body>
 
 <header class="topo">
+    
     <div class="topo-container">
 
         <div class="logo-area" onclick="window.location.href='index.html'" style="cursor:pointer;">
     <img src="Logo_oficial_CCB.png" alt="Logo CCB">
     <span>CCB Itaquiti</span>
+   <button id="btnMusica">MUSICA</button>
 </div>
 
         <h1>Controle de Presença da RDJ</h1>
 
      <nav class="menu">
-<button id="darkBtn" onclick="toggleDark()" style="margin-left:15px;">🌙</button>    <a href="index.html">Home</a>
+        
+<button id="darkBtn" onclick="toggleDark()" style="margin-left:15px;">TEMA</button>    <a href="index.html">Home</a>
     <span id="menuRegistro"></span>
     <a href="historico.html">Histórico</a>
     <a href="dashboard.html">Dashboard</a>
@@ -57,5 +64,51 @@
 
 </script>
 <script src="js/global.js"></script>
+<script>
+
+const firebaseConfig = {
+  apiKey: "AIzaSyD_QowpgX19PlVE1Cz0D0cpIJh7K0nUq0o",
+  authDomain: "ccb-registro.firebaseapp.com",
+  projectId: "ccb-registro",
+  storageBucket: "ccb-registro.firebasestorage.app",
+  messagingSenderId: "634223347098",
+  appId: "1:634223347098:web:c5124dd418b601baa22623"
+};
+
+firebase.initializeApp(firebaseConfig);
+
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+auth.onAuthStateChanged(async (user) => {
+
+    const menuRegistro = document.getElementById("menuRegistro");
+    const menuLogin = document.getElementById("menuLogin");
+
+    if (!menuLogin || !menuRegistro) return;
+
+    if (!user) {
+        menuRegistro.innerHTML = "";
+        menuLogin.innerHTML = '<a href="login.html">Login</a>';
+        return;
+    }
+
+    menuLogin.innerHTML = '<button onclick="firebase.auth().signOut().then(()=>window.location.href=\'login.html\')">Sair</button>';
+
+    // Verifica se é admin
+    const userSnap = await db.collection("usuarios").doc(user.uid).get();
+
+    if (userSnap.exists && userSnap.data().admin === true) {
+        menuRegistro.innerHTML = '<a href="registro.html">Registrar</a>';
+    } else {
+        menuRegistro.innerHTML = "";
+    }
+
+});
+</script>
+<audio id="bgMusic" loop>
+    <source src="musica.mp4" type="audio/mp4">
+</audio>
 </body>
 </html>
+

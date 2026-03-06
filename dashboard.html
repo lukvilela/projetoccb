@@ -1,34 +1,43 @@
-<!DOCTYPE html>
-<html>
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
 <head>
+    <meta charset="UTF-8">
     <title>Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <link rel="stylesheet" href="style2.css">
+
+    <!-- ATIVA DARK MODE ANTES DE CARREGAR -->
+    <script>
+        if (localStorage.getItem("darkMode") === "true") {
+            document.documentElement.classList.add("dark");
+        }
+    </script>
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
+
 <body>
 
 <header class="topo">
     <div class="topo-container">
         <div class="logo-area" onclick="window.location.href='index.html'" style="cursor:pointer;">
-    <img src="Logo_oficial_CCB.png" alt="Logo CCB">
-    <span>CCB Itaquiti</span>
-</div>
+            <img src="Logo_oficial_CCB.png" alt="Logo CCB">
+            <span>CCB Itaquiti</span>
+            <button id="btnMusica">MUSICA</button>
+        </div>
 
         <h1>Controle de Presença da RDJ</h1>
 
-       <nav class="menu">
-    <button id="darkBtn" onclick="toggleDark()">🌙</button>
-    <a href="index.html">Home</a>
-
-    <span id="menuRegistro"></span>
-
-    <a href="historico.html">Histórico</a>
-    <a href="dashboard.html">Dashboard</a>
-
-    <span id="menuLogin"></span>
-</nav>
+        <nav class="menu">
+            <button id="darkBtn" onclick="toggleDark()">TEMA</button>
+            <a href="index.html">Home</a>
+            <a href="registro.html" id="linkRegistrar">Registrar</a>
+            <a href="historico.html">Histórico</a>
+            <a href="dashboard.html">Dashboard</a>
+            <button onclick="sair()">Sair</button>
+        </nav>
     </div>
 </header>
 
@@ -65,69 +74,85 @@
 
 </div>
 
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+<script type="module">
 
-<script>
-  const firebaseConfig = {
-     apiKey: "AIzaSyD_QowpgX19PlVE1Cz0D0cpIJh7K0nUq0o",
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { 
+    getFirestore, 
+    collection, 
+    query, 
+    orderBy, 
+    onSnapshot,
+    doc,
+    getDoc
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+import { 
+    getAuth, 
+    onAuthStateChanged, 
+    signOut 
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+/* FIREBASE CONFIG */
+const firebaseConfig = {
+  apiKey: "AIzaSyD_QowpgX19PlVE1Cz0D0cpIJh7K0nUq0o",
   authDomain: "ccb-registro.firebaseapp.com",
   projectId: "ccb-registro",
   storageBucket: "ccb-registro.firebasestorage.app",
   messagingSenderId: "634223347098",
-  appId: "1:634223347098:web:c5124dd418b601baa22623",
-  measurementId: "G-5F7P9SDRBB"
-  };
+  appId: "1:634223347098:web:c5124dd418b601baa22623"
+};
 
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
-</script>
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
 
-<script>
+/* PROTECAO + VERIFICA ADMIN */
+onAuthStateChanged(auth, async (user) => {
 
-/* =========================
-   CONTROLE DE MENU / LOGIN
-========================= */
+    if (!user) {
+        window.location.href = "login.html";
+        return;
+    }
 
-const logado = localStorage.getItem("logado") === "true";
-const menuRegistro = document.getElementById("menuRegistro");
-const menuLogin = document.getElementById("menuLogin");
+    // Verifica se é admin
+    const userRef = doc(db, "usuarios", user.uid);
+    const userSnap = await getDoc(userRef);
 
-if (logado) {
-    menuRegistro.innerHTML = '<a href="registro.html">Registrar</a>';
-    menuLogin.innerHTML = '<button onclick="sair()">Sair</button>';
-} else {
-    menuLogin.innerHTML = '<a href="login.html">Login</a>';
-}
+    if (!userSnap.exists() || userSnap.data().admin !== true) {
+        const linkRegistrar = document.getElementById("linkRegistrar");
+        if (linkRegistrar) linkRegistrar.style.display = "none";
+    }
 
-function sair() {
-    localStorage.removeItem("logado");
-    window.location.href = "login.html";
-}
-
-
-/* =========================
-   DADOS
-========================= */
-
-let registros = [];
-
-db.collection("registros")
-.orderBy("data")
-.onSnapshot((snapshot) => {
-
-    registros = [];
-
-    snapshot.forEach(doc => {
-        registros.push(doc.data());
-    });
-
-    carregarDashboard();
+    carregarDados(); // Só carrega depois de autenticar
 });
 
-/* =========================
-   ESTATÍSTICAS
-========================= */
+/* LOGOUT */
+window.sair = async function () {
+    await signOut(auth);
+    window.location.href = "login.html";
+};
+
+/* DADOS */
+let registros = [];
+let grafico1 = null;
+let grafico2 = null;
+
+function carregarDados() {
+
+    const q = query(collection(db, "registros"), orderBy("data"));
+
+    onSnapshot(q, (snapshot) => {
+
+        registros = [];
+
+        snapshot.forEach(doc => {
+            registros.push(doc.data());
+        });
+
+        carregarDashboard();
+    });
+}
 
 function carregarDashboard() {
 
@@ -159,7 +184,10 @@ function carregarDashboard() {
     document.getElementById("mediaPresenca").innerText = media;
     document.getElementById("maiorReuniao").innerText = maior;
 
-    new Chart(document.getElementById('grafico'), {
+    if (grafico1) grafico1.destroy();
+    if (grafico2) grafico2.destroy();
+
+    grafico1 = new Chart(document.getElementById('grafico'), {
         type: 'line',
         data: {
             labels: datas,
@@ -173,7 +201,7 @@ function carregarDashboard() {
         options: { responsive: true }
     });
 
-    new Chart(document.getElementById('grafico2'), {
+    grafico2 = new Chart(document.getElementById('grafico2'), {
         type: 'bar',
         data: {
             labels: datas,
@@ -186,88 +214,28 @@ function carregarDashboard() {
     });
 }
 
-/* =========================
-   PDF
-========================= */
-
-function gerarPDFSemana() {
-
-    let hoje = new Date();
-    let seteDiasAtras = new Date();
-    seteDiasAtras.setDate(hoje.getDate() - 7);
-
-    let filtrados = registros.filter(r => {
-        let data = new Date(r.data);
-        return data >= seteDiasAtras && data <= hoje;
-    });
-
-    criarPDF(filtrados, "Relatorio_Semanal");
-}
-
-function gerarPDFMes() {
-
-    let hoje = new Date();
-    let mesAtual = hoje.getMonth();
-    let anoAtual = hoje.getFullYear();
-
-    let filtrados = registros.filter(r => {
-        let data = new Date(r.data);
-        return data.getMonth() === mesAtual && data.getFullYear() === anoAtual;
-    });
-
-    criarPDF(filtrados, "Relatorio_Mensal");
-}
-
-function criarPDF(lista, nomeArquivo) {
-
+/* PDF */
+window.gerarPDFSemana = function () {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
+    doc.text("Relatório Semanal - CCB Itaquiti", 20, 20);
+    doc.save("Relatorio_Semanal.pdf");
+};
 
-    doc.setFontSize(16);
-    doc.text("CCB Itaquiti - Controle de Presença", 20, 20);
-
-    doc.setFontSize(12);
-
-    if (!lista.length) {
-        doc.text("Nenhum registro encontrado no período.", 20, 40);
-    } else {
-
-        let y = 40;
-        let somaTotal = 0;
-
-        lista.forEach(r => {
-
-            const mocos = Number(r.mocos) || 0;
-            const mocas = Number(r.mocas) || 0;
-            const casados = Number(r.casados) || 0;
-            const visitas = Number(r.visitas) || 0;
-
-            const total = mocos + mocas + casados + visitas;
-            somaTotal += total;
-
-            doc.text(
-                `${r.data} | Palavra: ${r.palavra || "-"} | Total: ${total}`,
-                20,
-                y
-            );
-
-            y += 10;
-
-            if (y > 270) {
-                doc.addPage();
-                y = 20;
-            }
-        });
-
-        y += 10;
-        doc.text("Total Geral do Período: " + somaTotal, 20, y);
-    }
-
-    doc.save(nomeArquivo + ".pdf");
-}
+window.gerarPDFMes = function () {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    doc.text("Relatório Mensal - CCB Itaquiti", 20, 20);
+    doc.save("Relatorio_Mensal.pdf");
+};
 
 </script>
-<script src="js/global.js"></script>
 
+<script src="js/global.js"></script>
+<audio id="bgMusic" loop>
+    <source src="musica.mp4" type="audio/mp4">
+</audio>
 </body>
 </html>
+
+

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html>
 <head>
     <title>Histórico</title>
@@ -13,12 +13,13 @@
         <div class="logo-area" onclick="window.location.href='index.html'" style="cursor:pointer;">
     <img src="Logo_oficial_CCB.png" alt="Logo CCB">
     <span>CCB Itaquiti</span>
+    <button id="btnMusica">MUSICA</button>
         </div>
 
         <h1>Controle de Presença da RDJ</h1>
 
       <nav class="menu">
-    <button id="darkBtn" onclick="toggleDark()">🌙</button>
+    <button id="darkBtn" onclick="toggleDark()">TEMA</button>
     <a href="index.html">Home</a>
 
     <span id="menuRegistro"></span>
@@ -40,6 +41,7 @@
 <!-- Firebase CDN -->
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
 
 <script>
   const firebaseConfig = {
@@ -54,105 +56,114 @@
 
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
+  const auth = firebase.auth();
 </script>
 
 <script>
 
-/* =========================
-   MENU / LOGIN
-========================= */
+let isAdmin = false;
+auth.onAuthStateChanged(async (user) => {
 
-const logado = localStorage.getItem("logado") === "true";
-const menuRegistro = document.getElementById("menuRegistro");
-const menuLogin = document.getElementById("menuLogin");
+    const menuRegistro = document.getElementById("menuRegistro");
+    const menuLogin = document.getElementById("menuLogin");
+    const lista = document.getElementById("lista");
 
-if (logado) {
-    menuRegistro.innerHTML = '<a href="registro.html">Registrar</a>';
-    menuLogin.innerHTML = '<button onclick="sair()">Sair</button>';
-} else {
-    menuLogin.innerHTML = '<a href="login.html">Login</a>';
-}
-
-function sair() {
-    localStorage.removeItem("logado");
-    window.location.href = "login.html";
-}
-
-/* =========================
-   LISTAR REGISTROS FIREBASE
-========================= */
-
-const lista = document.getElementById("lista");
-
-db.collection("registros")
-.orderBy("timestamp", "desc")
-.onSnapshot((snapshot) => {
-
-    lista.innerHTML = "";
-
-    if (snapshot.empty) {
-        lista.innerHTML = `<div class="card">Nenhum registro encontrado.</div>`;
+    if (!user) {
+        isAdmin = false;
+        menuRegistro.innerHTML = "";
+        menuLogin.innerHTML = '<a href="login.html">Login</a>';
+        lista.innerHTML = "<div class='card'>Faça login para ver o histórico.</div>";
         return;
     }
 
-    snapshot.forEach((doc) => {
+    menuLogin.innerHTML = '<button onclick="auth.signOut().then(()=>window.location.href=\'login.html\')">Sair</button>';
 
-        const r = doc.data();
-        const id = doc.id;
+    // Verifica se é admin
+    const userSnap = await db.collection("usuarios").doc(user.uid).get();
 
-        const mocos = Number(r.mocos) || 0;
-        const mocas = Number(r.mocas) || 0;
-        const casados = Number(r.casados) || 0;
-        const musicos = Number(r.musicos) || 0;
-        const organistas = Number(r.organistas) || 0;
-        const visitas = Number(r.visitas) || 0;
+    isAdmin = false;
 
-        const totalIrmaos = mocos + mocas + casados;
-        const totalGeral = totalIrmaos + visitas;
+    if (userSnap.exists && userSnap.data().admin === true) {
+        isAdmin = true;
+        menuRegistro.innerHTML = '<a href="registro.html">Registrar</a>';
+    } else {
+        menuRegistro.innerHTML = "";
+    }
 
-        lista.innerHTML += `
-        <div class="card">
+    // LISTAR REGISTROS
+    db.collection("registros")
+    .orderBy("timestamp", "desc")
+    .onSnapshot((snapshot) => {
 
-            <div class="card-header">
-                <div>
-                    <span class="data">${r.data || "-"}</span>
-                    <span class="palavra">${r.palavra || "Sem palavra"}</span>
+        lista.innerHTML = "";
+
+        if (snapshot.empty) {
+            lista.innerHTML = `<div class="card">Nenhum registro encontrado.</div>`;
+            return;
+        }
+
+        snapshot.forEach((doc) => {
+
+            const r = doc.data();
+            const id = doc.id;
+
+            const mocos = Number(r.mocos) || 0;
+            const mocas = Number(r.mocas) || 0;
+            const casados = Number(r.casados) || 0;
+            const musicos = Number(r.musicos) || 0;
+            const organistas = Number(r.organistas) || 0;
+            const visitas = Number(r.visitas) || 0;
+
+            const totalIrmaos = mocos + mocas + casados;
+            const totalGeral = totalIrmaos + visitas;
+
+            lista.innerHTML += `
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <span class="data">${r.data || "-"}</span>
+                        <span class="palavra">${r.palavra || "Sem palavra"}</span>
+                    </div>
+                    <span class="atendeu">${r.atendeu || "-"}</span>
                 </div>
-                <span class="atendeu">${r.atendeu || "-"}</span>
-            </div>
 
-            <div class="numeros">
-                <div>Moços <strong>${mocos}</strong></div>
-                <div>Moças <strong>${mocas}</strong></div>
-                <div>Casados <strong>${casados}</strong></div>
-                <div>Músicos <strong>${musicos}</strong></div>
-                <div>Organistas <strong>${organistas}</strong></div>
-                <div class="visita">Visitas <strong>${visitas}</strong></div>
-            </div>
+                <div class="numeros">
+                    <div>Moços <strong>${mocos}</strong></div>
+                    <div>Moças <strong>${mocas}</strong></div>
+                    <div>Casados <strong>${casados}</strong></div>
+                    <div>Músicos <strong>${musicos}</strong></div>
+                    <div>Organistas <strong>${organistas}</strong></div>
+                    <div class="visita">Visitas <strong>${visitas}</strong></div>
+                </div>
 
-            <div class="total-box">
-                <div>Total Irmãos <strong>${totalIrmaos}</strong></div>
-                <div>Total Geral <strong>${totalGeral}</strong></div>
-            </div>
+                <div class="total-box">
+                    <div>Total Irmãos <strong>${totalIrmaos}</strong></div>
+                    <div>Total Geral <strong>${totalGeral}</strong></div>
+                </div>
 
-            ${logado ? `
-            <div class="botoes">
-                <button onclick="editar('${id}')">Editar</button>
-                <button onclick="excluir('${id}')" class="excluir">Excluir</button>
-            </div>
-            ` : ""}
+                ${isAdmin ? `
+                <div class="botoes">
+                    <button onclick="editar('${id}')">Editar</button>
+                    <button onclick="excluir('${id}')" class="excluir">Excluir</button>
+                </div>
+                ` : ""}
 
-        </div>
-        `;
+            </div>
+            `;
+        });
+
     });
 
 });
-
 /* =========================
    AÇÕES FIREBASE
 ========================= */
 
 function excluir(id) {
+    if (!isAdmin) {
+        alert("Apenas administradores podem excluir registros.");
+        return;
+    }
     if (confirm("Deseja realmente excluir?")) {
         db.collection("registros").doc(id).delete()
         .then(() => {
@@ -165,12 +176,22 @@ function excluir(id) {
 }
 
 function editar(id) {
-    localStorage.setItem("editandoId", id);
-    window.location.href = "registro.html";
+    if (!isAdmin) {
+        alert("Apenas administradores podem editar registros.");
+        return;
+    }
+    window.location.href = "registro.html?id=" + id;
 }
 
 </script>
 <script src="js/global.js"></script>
-
+<audio id="bgMusic" loop>
+    <source src="musica.mp4" type="audio/mp4">
+</audio>
 </body>
 </html>
+
+
+
+
+
